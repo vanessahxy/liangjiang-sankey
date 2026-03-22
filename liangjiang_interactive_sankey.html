@@ -1,0 +1,412 @@
+<script src="./d3.min.js"></script>
+<script src="./d3-sankey.min.js"></script>
+
+<div style="padding:12px 0 8px 0;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+    <div>
+      <div style="font-size:18px;font-weight:600;color:var(--color-text-primary);margin-bottom:4px;">主责主业拆解桑基图</div>
+    </div>
+    <div id="stats" style="font-size:12px;color:var(--color-text-secondary);text-align:right;"></div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">
+    <button id="btnAll" style="font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--color-border-secondary);background:var(--color-text-primary);color:var(--color-background-primary);cursor:pointer;">全部企业</button>
+    <select id="groupSel" style="font-size:13px;min-width:170px;padding:6px 10px;border-radius:10px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);">
+      <option value="">按集团筛选</option>
+    </select>
+    <select id="typeSel" style="font-size:13px;min-width:180px;padding:6px 10px;border-radius:10px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);">
+      <option value="">业务类型搜索</option>
+    </select>
+    <input id="kwInput" placeholder="企业搜索" style="font-size:13px;min-width:220px;padding:6px 10px;border-radius:10px;border:1px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);" />
+  </div>
+
+  <div id="legend" style="display:flex;flex-wrap:wrap;gap:6px 10px;font-size:11px;color:var(--color-text-tertiary);margin-bottom:12px;"></div>
+  <div id="chart" style="width:100%;overflow-x:auto;min-height:420px;border-radius:14px;background:linear-gradient(180deg,rgba(127,159,191,0.05),rgba(127,159,191,0.02));padding:8px;"></div>
+  <div id="detail" style="margin-top:12px;padding:14px 16px;border-radius:14px;background:var(--color-background-secondary);font-size:13px;line-height:1.75;"></div>
+</div>
+
+<script>
+const DATA=[{"g":"两江投资集团","n":"重庆两江新区开发投资集团有限公司（本部）","sector":"综合开发运营","c":"城市运营服务","focus":0,"core":"城市开发、城市建设、城市运营","func":"城市综合开发运营主体","analysis":"城市开发、城市建设、城市运营","equity":1,"manage":1,"rating":"AAA"},{"g":"两江投资集团","n":"重庆两江协同创新区建设投资发展有限公司","sector":"城市开发板块","c":"城市开发建设","focus":0,"core":"产业孵化培育，科创服务与投资、园区运营","func":"城市综合开发运营主体","analysis":"城市开发板块：产业孵化培育、科创服务与投资、园区运营","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新城城市运营管理有限公司","sector":"城市运营板块","c":"城市运营服务","focus":0,"core":"城市运营维护","func":"城市综合开发运营主体","analysis":"城市运营板块：城市运营维护","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新区水土新城建设投资有限公司","sector":"城市开发板块","c":"城市开发建设","focus":0,"core":"土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","func":"城市综合开发运营主体","analysis":"城市开发板块：土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新区龙兴新城建设投资有限公司","sector":"城市开发板块","c":"城市开发建设","focus":0,"core":"土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","func":"城市综合开发运营主体","analysis":"城市开发板块：土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新区鱼复新城建设投资有限公司（合并）","sector":"城市开发板块","c":"城市开发建设","focus":0,"core":"土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","func":"城市综合开发运营主体","analysis":"城市开发板块：土地一级开发（受托实施）、基础设施建设、城市功能配套建设运营","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆龙兴慧龙置业发展有限公司","sector":"综合开发运营","c":"房地产开发","focus":1,"core":"地产项目公司","func":"城市综合开发运营主体","analysis":"置业开发","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江新区置业发展有限公司（合并）","sector":"综合开发运营","c":"房地产开发","focus":0,"core":"地产项目公司，预计2027年12月注销","func":"城市综合开发运营主体","analysis":"房地产开发","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新区新盛置业发展有限公司","sector":"综合开发运营","c":"房地产开发","focus":0,"core":"地产项目公司，预计2027年12月注销","func":"城市综合开发运营主体","analysis":"房地产开发","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江新区新源置业发展有限公司","sector":"综合开发运营","c":"房地产开发","focus":0,"core":"地产项目公司，预计2027年12月注销","func":"城市综合开发运营主体","analysis":"房地产开发","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江新区新太置业发展有限公司","sector":"已注销","c":"项目整合/退出","focus":0,"core":"地产项目公司，预计2027年12月注销","func":"已注销","analysis":"房地产开发","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江新盛投资管理有限公司","sector":"城市运营板块","c":"文旅体育","focus":0,"core":"经营性资产专业化运营、公益性资产投资建设运营、大型文体卫旅项目策划和运营","func":"城市综合开发运营主体","analysis":"城市运营板块：经营性资产专业化运营、公益性资产投资建设运营","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆赛为城市运营服务有限公司（合并）","sector":"城市运营板块","c":"城市运营服务","focus":0,"core":"物业及配套延伸服务","func":"城市综合开发运营主体","analysis":"城市运营板块：物业及配套延伸服务","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆两江新区物业管理有限公司","sector":"综合开发运营","c":"城市运营服务","focus":0,"core":"物业设施设备维修保养、劳务派遣服务、保洁服务等","func":"城市综合开发运营主体","analysis":"物业管理","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆盛业智慧园区管理服务有限公司","sector":"综合开发运营","c":"城市运营服务","focus":0,"core":"园区管理","func":"城市综合开发运营主体","analysis":"园区管理服务","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江新区保安服务有限责任公司","sector":"综合开发运营","c":"城市运营服务","focus":0,"core":"安保服务","func":"城市综合开发运营主体","analysis":"安保服务","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆市江北嘴中央商务区投资集团有限公司（合并）","sector":"城市建设板块","c":"房地产开发","focus":1,"core":"房地产开发及销售","func":"城市综合开发运营主体","analysis":"城市建设板块：房地产开发及销售","equity":2,"manage":2,"rating":""},{"g":"两江投资集团","n":"重庆市江北嘴置业有限公司","sector":"综合开发运营","c":"房地产开发","focus":1,"core":"地产项目公司，预计2027年12月注销","func":"城市综合开发运营主体","analysis":"房地产开发及销售","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆华兴工程咨询有限公司（合并）","sector":"城市建设板块","c":"工程建设","focus":0,"core":"工程咨询、数字城市运营服务","func":"城市综合开发运营主体","analysis":"城市建设板块：工程咨询、数字城市运营服务","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆两江智慧城市投资发展有限公司","sector":"综合开发运营","c":"科技/数字产业","focus":0,"core":"建设工程施工、信息系统集成服务、特种设备安装改造修理等","func":"城市综合开发运营主体","analysis":"智慧城市投资","equity":4,"manage":4,"rating":""},{"g":"两江投资集团","n":"舞钢市两江智慧市政建设有限公司","sector":"综合开发运营","c":"工程建设","focus":0,"core":"建筑施工，2029年内注销","func":"城市综合开发运营主体","analysis":"智慧市政建设","equity":5,"manage":5,"rating":""},{"g":"两江投资集团","n":"重庆渝海控股（集团）有限责任公司（合并）","sector":"综合开发运营","c":"房地产开发","focus":1,"core":"城市运营管理，2027年内注销","func":"城市综合开发运营主体","analysis":"房地产开发及销售","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆渝海物业管理有限责任公司","sector":"综合开发运营","c":"城市运营服务","focus":0,"core":"物业服务，2026年内注销","func":"城市综合开发运营主体","analysis":"物业管理","equity":4,"manage":4,"rating":""},{"g":"两江投资集团","n":"重庆两江新区建设有限公司","sector":"城市建设板块","c":"工程建设","focus":0,"core":"建筑施工","func":"城市综合开发运营主体","analysis":"城市建设板块：建筑施工","equity":3,"manage":3,"rating":""},{"g":"两江投资集团","n":"重庆寸滩港城发展有限公司","sector":"城市开发板块","c":"房地产开发","focus":0,"core":"寸滩港片区基础设施建设、商业商务楼宇开发","func":"城市综合开发运营主体","analysis":"城市开发板块：寸滩港片区基础设施建设、商业商务楼宇开发","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江新区产业发展集团有限公司（本部）","sector":"产业投资运营","c":"会展经济","focus":0,"core":"产业资本投资、产业运营服务、会展经济发展","func":"产业投资运营主体","analysis":"产业资本投资、产业运营服务、会展经济发展","equity":1,"manage":1,"rating":"AAA"},{"g":"两江产业集团","n":"重庆两江私募股权投资基金管理有限公司（合并）","sector":"产业资本投资板块","c":"产业资本投资","focus":0,"core":"私募股权基金投资","func":"产业投资运营主体","analysis":"产业资本投资板块：私募股权基金投资","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆承运企业管理有限公司","sector":"产业投资运营","c":"产业资本投资","focus":0,"core":"配合两江基金的GP","func":"产业投资运营主体","analysis":"市场化股权基金业务","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江承投企业管理有限公司","sector":"产业投资运营","c":"产业资本投资","focus":0,"core":"配合江北嘴基金的GP","func":"产业投资运营主体","analysis":"市场化股权基金业务","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆市江北嘴私募股权投资基金管理有限公司","sector":"产业投资运营","c":"产业资本投资","focus":0,"core":"市场化私募股权投资","func":"产业投资运营主体","analysis":"私募股权基金管理","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆渝高科技产业（集团）股份有限公司（合并）","sector":"产业运营服务板块","c":"资产运营管理","focus":0,"core":"资产运营、现代服务业发展","func":"产业投资运营主体","analysis":"产业运营服务板块：资产运营、现代服务业发展","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆渝高明嘉房地产开发有限公司","sector":"产业投资运营","c":"房地产开发","focus":1,"core":"产业载体建设","func":"产业投资运营主体","analysis":"房地产开发及销售","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江新区产城融合发展有限公司（合并）","sector":"产业运营服务板块","c":"产业运营服务","focus":0,"core":"企业增值服务（科技、金融、法律等）","func":"产业投资运营主体","analysis":"产业运营服务板块：企业增值服务（科技、金融、法律等）","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆北恒投资发展有限公司","sector":"产业投资运营","c":"产业运营服务","focus":0,"core":"产业载体运营","func":"产业投资运营主体","analysis":"投资管理","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江高赛夫创新科技发展有限公司","sector":"产业投资运营","c":"科技/数字产业","focus":0,"core":"SPV公司","func":"产业投资运营主体","analysis":"科技创新发展","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆高汇置业有限公司","sector":"产业投资运营","c":"房地产开发","focus":1,"core":"产业载体运营","func":"产业投资运营主体","analysis":"房地产开发","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆云计算投资运营有限公司(合并)","sector":"产业投资运营","c":"科技/数字产业","focus":0,"core":"算力服务","func":"产业投资运营主体","analysis":"算力服务","equity":3,"manage":null,"rating":""},{"g":"两江产业集团","n":"重庆云投信息技术有限公司","sector":"产业投资运营","c":"项目整合/退出","focus":1,"core":"数据中心环境运营维护、信息系统规划、通信业务及系统维护","func":"产业投资运营主体","analysis":"引战退出","equity":4,"manage":null,"rating":""},{"g":"两江产业集团","n":"重庆两江金融发展有限公司","sector":"产业投资运营","c":"项目整合/退出","focus":1,"core":"金融服务","func":"产业投资运营主体","analysis":"金融服务（改革方案为吸收合并）","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆两江新区产业运营有限公司（合并）","sector":"产业运营服务板块","c":"产业运营服务","focus":0,"core":"产业项目落地运营","func":"产业投资运营主体","analysis":"产业运营服务板块：产业项目落地运营","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆高科集团有限公司","sector":"产业投资运营","c":"产业运营服务","focus":0,"core":"产业项目落地运营","func":"产业投资运营主体","analysis":"产业运营","equity":3,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆两江现代服务业发展有限公司","sector":"产业投资运营","c":"科技/数字产业","focus":0,"core":"培育发展现代服务业","func":"产业投资运营主体","analysis":"信息技术","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江战新科创产业有限公司","sector":"产业投资运营","c":"产业运营服务","focus":0,"core":"培育发展先进制造业","func":"产业投资运营主体","analysis":"先进制造业培育发展","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江新区人才发展集团有限公司","sector":"产业投资运营","c":"产业运营服务","focus":0,"core":"项目招引及人才服务","func":"产业投资运营主体","analysis":"招才引智","equity":2,"manage":1,"rating":""},{"g":"两江产业集团","n":"重庆空天信息产业有限公司（合并）","sector":"产业运营服务板块","c":"科技/数字产业","focus":0,"core":"空天信息产业培育","func":"产业投资运营主体","analysis":"产业运营服务板块：空天信息产业培育","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆通航融资租赁有限公司","sector":"产业投资运营","c":"金融服务","focus":1,"core":"低空经济产业融资租赁业务","func":"产业投资运营主体","analysis":"融资租赁","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆两江机场管理有限公司","sector":"产业投资运营","c":"科技/数字产业","focus":0,"core":"低空基础设施运营","func":"产业投资运营主体","analysis":"空天信息产业","equity":3,"manage":3,"rating":""},{"g":"两江产业集团","n":"重庆悦瑞文化旅游发展有限公司","sector":"产业投资运营","c":"项目整合/退出","focus":1,"core":"待吸并","func":"产业投资运营主体","analysis":"吸收合并","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆国际博览中心有限公司","sector":"会展经济发展板块","c":"会展经济","focus":0,"core":"会展运营服务","func":"产业投资运营主体","analysis":"会展经济发展板块：会展运营服务","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆悦来兴城资产经营管理有限公司","sector":"产业投资运营","c":"资产运营管理","focus":1,"core":"城市运营服务、资产经营管理、物业经营管理","func":"产业投资运营主体","analysis":"资产运营","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆悦来两江国际酒店会议管理有限公司","sector":"产业投资运营","c":"文旅体育","focus":1,"core":"酒店服务","func":"产业投资运营主体","analysis":"酒店管理","equity":2,"manage":2,"rating":""},{"g":"两江产业集团","n":"重庆两江新兴科技产业发展有限公司","sector":"产业运营服务板块","c":"产业运营服务","focus":0,"core":"项目招引及人才服务","func":"产业投资运营主体","analysis":"产业运营服务板块：招商引资、招才引智","equity":2,"manage":1,"rating":""},{"g":"保税港集团","n":"重庆保税港区开发管理集团有限公司（本部）","sector":"保税经济发展","c":"产业贸易物流","focus":0,"core":"开放平台运营、开放产业投资、产业贸易物流","func":"内陆开放型保税经济发展主体","analysis":"开放平台运营、开放产业投资、产业贸易物流","equity":1,"manage":1,"rating":"AA+"},{"g":"保税港集团","n":"重庆保税港区港昌城市运营管理有限公司","sector":"开放平台运营板块","c":"开放平台运营","focus":0,"core":"开放园区保障及开放平台运营","func":"内陆开放型保税经济发展主体","analysis":"开放平台运营板块：开放园区保障及开放平台运营","equity":2,"manage":2,"rating":""},{"g":"保税港集团","n":"重庆保税港区绿创投资发展有限公司","sector":"开放产业投资板块","c":"开放产业投资","focus":0,"core":"开放产业投资","func":"内陆开放型保税经济发展主体","analysis":"开放产业投资板块：开放产业投资","equity":2,"manage":2,"rating":""},{"g":"保税港集团","n":"重庆果园港国际物流枢纽建设发展有限公司","sector":"产业贸易物流板块","c":"产业贸易物流","focus":0,"core":"临港综保功能区运营（产业贸易物流）","func":"内陆开放型保税经济发展主体","analysis":"产业贸易物流板块：临港综保功能区运营","equity":2,"manage":2,"rating":""},{"g":"保税港集团","n":"重庆宝地实业发展有限公司","sector":"保税经济发展","c":"项目整合/退出","focus":1,"core":"预计2029年12月底前完成整合优化工作","func":"内陆开放型保税经济发展主体","analysis":"拟整合","equity":2,"manage":2,"rating":""},{"g":"保税港集团","n":"重庆保税港区股份有限公司（合并）","sector":"产业贸易物流板块","c":"产业贸易物流","focus":0,"core":"产业贸易及开放平台运营","func":"内陆开放型保税经济发展主体","analysis":"产业贸易物流板块：产业贸易及开放平台运营","equity":2,"manage":2,"rating":""},{"g":"保税港集团","n":"重庆保税港区港欣资产经营管理有限公司","sector":"保税经济发展","c":"资产运营管理","focus":0,"core":"期货交割仓资产运营","func":"内陆开放型保税经济发展主体","analysis":"期货交割仓资产运营","equity":3,"manage":3,"rating":""},{"g":"保税港集团","n":"重庆保税商品展示交易中心有限公司","sector":"保税经济发展","c":"产业贸易物流","focus":0,"core":"进出口商品贸易、商品展示交易","func":"内陆开放型保税经济发展主体","analysis":"进出口商品贸易、商品展示交易","equity":3,"manage":3,"rating":""},{"g":"江北国投集团","n":"重庆市江北区国有资本投资运营管理集团有限公司（本部）","sector":"资产运营管理","c":"产业资本投资","focus":0,"core":"基金、股权投资管理等金融业务；国有资产投资、运营管理；文化体育和商业项目开发、运营、服务","func":"资产运营管理","analysis":"国有资本投资、国有资产经营管理","equity":1,"manage":1,"rating":"AA+"},{"g":"江北国投集团","n":"重庆江北国投产业管理有限公司","sector":"资产运营管理","c":"资产运营管理","focus":0,"core":"固定资产投资管理、专业市场及产业园开发运营","func":"资产运营管理","analysis":"资产管理和专业化市场运营","equity":2,"manage":2,"rating":""},{"g":"江北国投集团","n":"重庆江北国投商业管理有限公司","sector":"资产运营管理","c":"资产运营管理","focus":0,"core":"商业资产开发及商业项目运营","func":"资产运营管理","analysis":"商业项目运营管理","equity":2,"manage":2,"rating":""},{"g":"江北国投集团","n":"重庆宏融鑫牛企业管理有限公司","sector":"资本投资","c":"项目整合/退出","focus":1,"core":"无（纳入减户计划）","func":"资本投资","analysis":"已纳入减户计划","equity":2,"manage":2,"rating":""},{"g":"江北国投集团","n":"重庆重体体育产业发展有限责任公司","sector":"资产运营管理","c":"文旅体育","focus":1,"core":"文化体育产业服务","func":"资产运营管理","analysis":"文化体育产业服务","equity":2,"manage":2,"rating":""},{"g":"江北国投集团","n":"重庆江北国投华信资产管理有限公司","sector":"资本投资","c":"金融服务","focus":0,"core":"国有资本投资、融资担保等金融类业务","func":"资本投资","analysis":"国有资本投资(股权直投、融资担保、融资租赁等业务)","equity":2,"manage":2,"rating":""},{"g":"江北国投集团","n":"重庆江北产业引导私募股权投资基金管理有限公司*","sector":"其他","c":"产业资本投资","focus":0,"core":"私募基金管理、基金投资","func":"其他","analysis":"基金管理","equity":2,"manage":3,"rating":""},{"g":"江北国投集团","n":"重庆悦诚融资担保有限公司*","sector":"其他","c":"金融服务","focus":0,"core":"政府性融资担保","func":"其他","analysis":"政府性融资担保","equity":2,"manage":3,"rating":""},{"g":"江北城开集团","n":"重庆市江北区城市开发产业集团有限公司（本部）","sector":"产业服务","c":"城市开发建设","focus":0,"core":"战略性新兴产业投资开发、商业投资开发运营管理及片区开发","func":"产业服务","analysis":"战略性新兴产业投资开发、商业投资开发运营管理","equity":2,"manage":1,"rating":"AA+"},{"g":"江北城开集团","n":"重庆睿昇置业有限公司","sector":"城市建设","c":"房地产开发","focus":0,"core":"房地产投资开发运营","func":"城市建设","analysis":"房地产投资开发运营","equity":3,"manage":2,"rating":""},{"g":"江北城开集团","n":"重庆市江北区文化旅游开发有限公司","sector":"产业服务","c":"文旅体育","focus":0,"core":"江北商旅文体产业投资开发运营","func":"产业服务","analysis":"全区旅游资源开发建设","equity":3,"manage":2,"rating":""},{"g":"江北城开集团","n":"重庆睿图建设发展有限公司","sector":"城市建设","c":"项目整合/退出","focus":1,"core":"保障房建设（纳入减户计划）","func":"城市建设","analysis":"已纳入减户计划","equity":3,"manage":2,"rating":""},{"g":"江北城开集团","n":"重庆建北工程管理有限公司*","sector":"城市建设","c":"工程建设","focus":1,"core":"工程管理","func":"城市建设","analysis":"项目全过程咨询管理","equity":2,"manage":2,"rating":""},{"g":"江北新城公司","n":"重庆江北新城发展建设有限公司*","sector":"产业服务","c":"产业运营服务","focus":0,"core":"产业园区建设开发运营","func":"产业服务","analysis":"产城融合示范区开发建设及产业运营服务","equity":1,"manage":2,"rating":""},{"g":"江北城管集团","n":"重庆市江北区城市运营管理集团有限公司（本部）","sector":"城市发展运营","c":"房地产开发","focus":0,"core":"公共设施管理业；租赁和商务服务业；房地产租赁经营","func":"城市发展运营","analysis":"城市公共服务、城市公共资产资源经营、新型城市基础设施建设运营","equity":2,"manage":1,"rating":""},{"g":"江北城管集团","n":"重庆智汇佳生活服务有限公司","sector":"城市发展运营","c":"城市运营服务","focus":0,"core":"物业服务","func":"城市发展运营","analysis":"物业服务","equity":3,"manage":2,"rating":""},{"g":"江北城管集团","n":"重庆市江北区信驿市政设施管理服务有限公司","sector":"城市发展运营","c":"城市运营服务","focus":0,"core":"市政设施管理","func":"城市发展运营","analysis":"停车管理服务","equity":3,"manage":2,"rating":""},{"g":"江北城管集团","n":"重庆江北大数据应用发展有限公司","sector":"城市发展运营","c":"科技/数字产业","focus":1,"core":"新型信息技术服务和大数据服务","func":"城市发展运营","analysis":"软件和信息技术服务","equity":3,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆市江北区城市建设发展集团有限公司（本部）","sector":"城市发展运营","c":"资产运营管理","focus":0,"core":"城市更新、工程全过程咨询、资产盘活利用","func":"城市发展运营","analysis":"城市更新(土地一 级整治联动)工程 全过程咨询技术服 务、资产运营管理","equity":1,"manage":1,"rating":"AA+"},{"g":"江北城建集团","n":"重庆市盛景实业有限公司","sector":"城市发展运营","c":"城市更新","focus":0,"core":"城市更新","func":"城市发展运营","analysis":"存量安置房管理、 城市房屋征收代办","equity":2,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆观音桥商圈开发建设有限公司","sector":"城市建设","c":"项目整合/退出","focus":1,"core":"无（纳入减户计划）","func":"城市建设","analysis":"已纳入减户计划","equity":2,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆市江北区路桥建设有限责任公司","sector":"城市建设","c":"工程建设","focus":0,"core":"工程全过程咨询","func":"城市建设","analysis":"工程项目代建及工程专业咨询服务","equity":2,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆市江北区城市建设工程技术有限公司","sector":"城市建设","c":"工程建设","focus":0,"core":"工程设计与施工","func":"城市建设","analysis":"工程施工与设计","equity":2,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆市江北区建设工程质量检测有限责任公司","sector":"城市建设","c":"工程建设","focus":0,"core":"工程质量检测","func":"城市建设","analysis":"工程质量检测","equity":2,"manage":2,"rating":""},{"g":"江北城建集团","n":"重庆市江北区城艺商业管理有限公司","sector":"资产运营管理","c":"资产运营管理","focus":0,"core":"产业、商业投资及资产运营","func":"资产运营管理","analysis":"政府投资公益类基础设施建设","equity":2,"manage":2,"rating":"AA"},{"g":"临空投资集团","n":"重庆临空开发投资集团有限公司（本部）","sector":"资本投资","c":"金融服务","focus":0,"core":"围绕现代服务业的产能升级，负责软件信息、金融等现代服务业的产业 引进培育和企业服务工作","func":"资本投资","analysis":"金融及类金融：存量债务化解和接续、资源盘活、减亏扭亏，发挥AA+信用评级效应","equity":1,"manage":1,"rating":"AA+"},{"g":"临空投资集团","n":"重庆临空启航股权投资基金管理有限公司","sector":"资本投资","c":"产业资本投资","focus":0,"core":"管理远翔基金","func":"资本投资","analysis":"基金管理（管理远翔基金）","equity":2,"manage":2,"rating":""},{"g":"临空投资集团","n":"重庆临空远翔股权投资基金合伙企业(有限合伙)","sector":"资本投资","c":"产业资本投资","focus":0,"core":"围绕产业发展规划开展产业基金投资业务","func":"资本投资","analysis":"产业基金投资","equity":2,"manage":2,"rating":""},{"g":"空港经济公司","n":"重庆空港经济开发建设有限公司*","sector":"城市发展运营","c":"城市开发建设","focus":0,"core":"聚焦航空运输与物流、航空制造、航空维修等领域，负责相关产业的引进培育和企业服务工作。负责盘活资产、化解存量债务和减亏扭亏任务；承接临空投资集团下属智慧产业园公司运营管理。","func":"城市发展运营","analysis":"基础设施建设：航空运输与物流、航空制造等领域产业引进培育","equity":2,"manage":1,"rating":""},{"g":"临空投资集团","n":"重庆现代建筑智慧产业园开发建设有限公司*","sector":"城市发展运营","c":"工程建设","focus":1,"core":"负责空港工业园区双凤桥片区、航空小镇等区域划线停车位经营管理；学堂村城中村改造项目实施；禄欣祥标准厂房经营管理；空港经济公司部分资产的受托经营管理","func":"城市发展运营","analysis":"划线停车位经营、厂房经营、城中村改造","equity":2,"manage":2,"rating":""},{"g":"临空文旅公司","n":"重庆临空文化旅游发展有限公司","sector":"城市发展运营","c":"文旅体育","focus":0,"core":"聚焦现代农业、文化旅游与体育等领域，负责相关产业的引进培育和企业服务工作","func":"城市发展运营","analysis":"水利环境和公共设施管理业：农文旅体资源开发利用和城市文体设施投融建管运","equity":2,"manage":1,"rating":""},{"g":"临空投资集团","n":"重庆市渝北区农村产权流转服务有限公司","sector":"其他","c":"农业服务","focus":0,"core":"接入市交易平台，负责全区农村产权流转交易综合服务","func":"其他","analysis":"农林牧渔业：全区农村产权流转交易综合性专业化服务","equity":2,"manage":2,"rating":""},{"g":"仙桃数据谷公司","n":"重庆仙桃数据谷投资管理有限公司（合并）","sector":"城市发展运营","c":"科技/数字产业","focus":0,"core":"聚焦汽车软件、工业软件、集成电 路设计、人工智能等软件和信息服务领域，负责相关产业的引进培育和企业服务、仙桃数据谷投融建管运工作","func":"城市发展运营","analysis":"信息传输计算机服务和软件业：仙桃数据谷投融建管运，汽车软件、集成电路设计、AI等","equity":2,"manage":1,"rating":"AA+"},{"g":"仙桃数据谷公司","n":"重庆空港人力资源管理有限公司","sector":"其他","c":"人力资源服务","focus":0,"core":"市场化方式开展人力资源服务相关业务","func":"其他","analysis":"租赁和商务服务业：人力资源服务（市场化程度较高）","equity":3,"manage":2,"rating":""},{"g":"渝北更新公司","n":"重庆渝北城市更新建设有限公司(合并)*","sector":"城市建设","c":"城市更新","focus":0,"core":"围绕城市综合开发和更新改造，受托开展城市开发和旧城改造项目投融建工作，以及城乡基础设施建设等","func":"城市建设","analysis":"基础设施建设：城市开发和旧城改造项目投融建","equity":2,"manage":1,"rating":""},{"g":"渝北更新公司","n":"重庆金会昌置业有限公司","sector":"城市建设","c":"房地产开发","focus":0,"core":"处理瀛丹大厦项目处置及重建工作","func":"城市建设","analysis":"房地产：承担保障性住房建设任务","equity":3,"manage":2,"rating":""},{"g":"渝北更新公司","n":"重庆更新启承城市运营管理有限公司","sector":"其他","c":"历史遗留处置","focus":0,"core":"处理恒大3号地块遗留问题","func":"其他","analysis":"处理恒大3号地块遗留问题","equity":3,"manage":2,"rating":""},{"g":"空港城发集团","n":"重庆空港城市建设发展集团有限公司（本部）","sector":"城市发展运营","c":"产业运营服务","focus":0,"core":"围绕城市品质提升，负责实施城市综合开发投融建工作，负责中央公园 片区、现代消费走廊的产业引进培育和企业服务工作","func":"城市发展运营","analysis":"水利环境和公共设施管理业：城市综合开发投融建，中央公园片区、现代消费走廊的产业引进培育和企业服务，发挥AA+优势","equity":1,"manage":1,"rating":"AA+"},{"g":"空港城发集团","n":"重庆市渝北区保安服务有限责任公司","sector":"其他","c":"城市运营服务","focus":0,"core":"保安服务许可证，以市场化方式开展物业管理、安保服务、垃圾处理服务等相关业务","func":"其他","analysis":"居民服务和其他服务业：物业管理、安保服务、垃圾处理服务（市场化程度较高）","equity":2,"manage":2,"rating":""},{"g":"空港城发集团","n":"重庆西航溥博企业管理咨询有限公司","sector":"其他","c":"其他","focus":1,"core":"承继原万科智慧谷项目开发建设","func":"其他","analysis":"承继万科智慧谷项目开发建设","equity":2,"manage":2,"rating":""},{"g":"空港新城公司","n":"重庆空港新城开发建设有限公司","sector":"城市发展运营","c":"城市运营服务","focus":0,"core":"围绕城市运维保供和服务品质提升，受托开展供排水、市政环卫、绿化养护、公园运营管理等公共服务业务","func":"城市发展运营","analysis":"基础设施建设：城市运维保供等公共服务业务。负责开展弃土场、农村水厂经营；盘活利用安置房及其配套商业、停车场等经营性资产","equity":2,"manage":1,"rating":"AA"},{"g":"渝港建设公司","n":"重庆渝港建设投资集团有限公司（合并）*","sector":"资产运营管理","c":"历史遗留处置","focus":0,"core":"资产运营管理，为区征地事务提供人力服务；负责企业担保公司、兴农担保公司历史遗留问题处置工作","func":"资产运营管理","analysis":"房地产：资产运营管理，为征地事务提供人力服务；负责企业担保公司、兴农担保公司历史遗留问题处置工作","equity":1,"manage":2,"rating":""},{"g":"渝港建设公司","n":"重庆市渝北区企业融资担保有限公司","sector":"资本投资","c":"历史遗留处置","focus":0,"core":"解决担保业务遗留问题；作为B37-1地块保障性住房项目公司，负责保障性住房建设相关工作","func":"资本投资","analysis":"担保业务遗留处置、保障性住房建设","equity":2,"manage":3,"rating":""},{"g":"战新产业集团","n":"重庆战新科技产业集团有限公司(本部)","sector":"城市发展运营","c":"产业运营服务","focus":0,"core":"围绕前沿科技城打造先进制造业产业集群，负责汽车、电子、新材料等相关产业的引进培育和企业服务；负责前沿科技城“投融建管运”等相关工作","func":"城市发展运营","analysis":"基础设施建设：前沿科技城、木耳物流园投融建管运工作，负责打造先进制造业发展平台，发挥产业引领功能","equity":1,"manage":1,"rating":""},{"g":"战新产业集团","n":"重庆北部农业开发（集团）有限公司","sector":"城市发展运营","c":"农业服务","focus":1,"core":"负责集团授权范围内的项目运营、投资发展","func":"城市发展运营","analysis":"项目运营、投资发展","equity":2,"manage":2,"rating":""},{"g":"战新产业集团","n":"重庆北飞实业有限公司","sector":"资产运营管理","c":"资产运营管理","focus":1,"core":"负责集团授权范围内的资产经营管理","func":"资产运营管理","analysis":"资产经营管理","equity":2,"manage":2,"rating":""},{"g":"战新产业集团","n":"重庆前沿汽车工业有限公司","sector":"产业服务","c":"城市开发建设","focus":0,"core":"作为长安渝北新工厂项目建设主体，推进实施新工厂投融建相关工作","func":"产业服务","analysis":"租赁和商务服务业：长安渝北新工厂项目建设主体，新工厂投融建","equity":2,"manage":2,"rating":""},{"g":"战新产业集团","n":"重庆市渝北国有资本投资有限公司","sector":"资本投资","c":"产业资本投资","focus":1,"core":"基金投资及直投项目运营管理，为集团产业引进培育提供金融支撑","func":"资本投资","analysis":"基金投资及直投运营管理","equity":2,"manage":2,"rating":""},{"g":"临空招商公司","n":"重庆临空招商集团有限公司","sector":"资本投资","c":"产业资本投资","focus":0,"core":"基金投资及直投项目运营管理，为集团产业引进培育提供金融支撑","func":"资本投资","analysis":"基金投资及直投运营管理","equity":1,"manage":2,"rating":""},{"g":"蔡家组团公司","n":"重庆市蔡家组团建设开发有限公司（管理口径）","sector":"蔡家综合开发","c":"城市运营服务","focus":0,"core":"蔡家片区土地整治与开发、基础设施建设、公共服务配套完善、产业集聚平台打造等","func":"蔡家综合开发运营主体","analysis":"蔡家片区综合开发建设","equity":1,"manage":null,"rating":"AA"},{"g":"蔡家组团公司","n":"重庆石圣建设有限公司","sector":"蔡家综合开发","c":"工程建设","focus":0,"core":"工程建设（未实际经营）","func":"蔡家综合开发运营主体","analysis":"工程建设","equity":2,"manage":null,"rating":""},{"g":"蔡家组团公司","n":"重庆寓翰房地产开发有限公司","sector":"蔡家综合开发","c":"房地产开发","focus":0,"core":"房地产开发（未实际经营）","func":"蔡家综合开发运营主体","analysis":"房地产开发","equity":2,"manage":null,"rating":""},{"g":"蔡家组团公司","n":"重庆智新科技服务有限公司（管理口径）","sector":"蔡家综合开发","c":"城市运营服务","focus":1,"core":"渣土经营、物业管理、建材贸易等","func":"蔡家综合开发运营主体","analysis":"城市服务","equity":1,"manage":null,"rating":""},{"g":"蔡家组团公司","n":"重庆新程项目管理有限公司","sector":"蔡家综合开发","c":"工程建设","focus":0,"core":"工程管理服务（未实际经营）","func":"蔡家综合开发运营主体","analysis":"项目管理","equity":2,"manage":null,"rating":""}];
+
+const GROUP_COLORS={
+  "两江投资集团":"#2A6DB0",
+  "两江产业集团":"#5A49B8",
+  "保税港集团":"#127C88",
+  "江北国投集团":"#227A4E",
+  "江北城开集团":"#C55A2E",
+  "江北新城公司":"#8A6C3B",
+  "江北城管集团":"#728C22",
+  "江北城建集团":"#8A5B17",
+  "临空投资集团":"#C24A70",
+  "空港经济公司":"#3090B8",
+  "临空文旅公司":"#E38A1A",
+  "仙桃数据谷公司":"#6888E8",
+  "渝北更新公司":"#D26442",
+  "空港城发集团":"#D17B55",
+  "空港新城公司":"#6A98A1",
+  "渝港建设公司":"#A96E54",
+  "战新产业集团":"#AE4FA2",
+  "临空招商公司":"#9D6CC6",
+  "蔡家组团公司":"#7A7A7A"
+};
+
+const TYPE_COLORS={
+  "城市建设开发类":"#3D8DD7",
+  "资本投资金融类":"#6750C0",
+  "城市运营服务类":"#36A16B",
+  "园区产业服务类":"#8A6CE0",
+  "科技数字类":"#D45688",
+  "资产运营管理类":"#6E7683",
+  "文商旅会展类":"#E6A024",
+  "开放物流贸易类":"#2A9D8F",
+  "人才服务类":"#4E83C7",
+  "农业水务服务类":"#86A83C",
+  "其他/拟整合处置类":"#9A938A"
+};
+
+const TYPE_MAP={
+  "城市开发建设":"城市建设开发类",
+  "城市更新":"城市建设开发类",
+  "工程建设":"城市建设开发类",
+  "房地产开发":"城市建设开发类",
+  "产业资本投资":"资本投资金融类",
+  "金融服务":"资本投资金融类",
+  "城市运营服务":"城市运营服务类",
+  "产业运营服务":"园区产业服务类",
+  "科技/数字产业":"科技数字类",
+  "资产运营管理":"资产运营管理类",
+  "文旅体育":"文商旅会展类",
+  "会展经济":"文商旅会展类",
+  "开放平台运营":"开放物流贸易类",
+  "开放产业投资":"开放物流贸易类",
+  "产业贸易物流":"开放物流贸易类",
+  "人力资源服务":"人才服务类",
+  "农业服务":"农业水务服务类",
+  "历史遗留处置":"其他/拟整合处置类",
+  "项目整合/退出":"其他/拟整合处置类",
+  "其他":"其他/拟整合处置类"
+};
+
+const TYPE_OVERRIDE={
+  "重庆两江新区开发投资集团有限公司（本部）":"资本投资金融类",
+  "重庆两江协同创新区建设投资发展有限公司":"园区产业服务类",
+  "重庆两江新区新太置业发展有限公司":"城市建设开发类",
+  "重庆两江新区产业发展集团有限公司（本部）":"资本投资金融类",
+  "重庆两江金融发展有限公司":"资本投资金融类",
+  "重庆两江新区人才发展集团有限公司":"人才服务类",
+  "重庆两江新兴科技产业发展有限公司":"人才服务类",
+  "重庆市江北区国有资本投资运营管理集团有限公司（本部）":"资本投资金融类",
+  "重庆江北国投产业管理有限公司":"资本投资金融类",
+  "重庆宏融鑫牛企业管理有限公司":"资本投资金融类",
+  "重庆市江北区城市开发产业集团有限公司（本部）":"园区产业服务类",
+  "重庆市渝北区企业融资担保有限公司":"资本投资金融类",
+  "重庆西航溥博企业管理咨询有限公司":"园区产业服务类",
+  "重庆战新科技产业集团有限公司(本部)":"园区产业服务类",
+  "重庆前沿汽车工业有限公司":"园区产业服务类"
+};
+
+const GROUP_REMAP={
+  "临空招商公司":"战新产业集团",
+  "渝港建设公司":"空港城发集团",
+  "江北新城公司":"江北城开集团",
+  "渝北更新公司":"渝北城更公司"
+};
+
+const GROUP_ORDER=[
+  "两江投资集团",
+  "两江产业集团",
+  "保税港集团",
+  "江北国投集团",
+  "江北城开集团",
+  "江北城管集团",
+  "江北城建集团",
+  "临空投资集团",
+  "空港经济公司",
+  "仙桃数据谷公司",
+  "临空文旅公司",
+  "渝北城更公司",
+  "空港城发集团",
+  "空港新城公司",
+  "战新产业集团",
+  "蔡家组团公司"
+];
+
+const TYPE_ORDER=[
+  "城市建设开发类",
+  "资本投资金融类",
+  "城市运营服务类",
+  "园区产业服务类",
+  "科技数字类",
+  "资产运营管理类",
+  "文商旅会展类",
+  "开放物流贸易类",
+  "人才服务类",
+  "农业水务服务类",
+  "其他/拟整合处置类"
+];
+
+DATA.forEach(item=>{
+  item.g=GROUP_REMAP[item.g] || item.g;
+  item.type=TYPE_OVERRIDE[item.n] || TYPE_MAP[item.c] || "其他/拟整合处置类";
+});
+
+const state={mode:"all",value:"",keyword:""};
+
+const groupSel=document.getElementById("groupSel");
+const typeSel=document.getElementById("typeSel");
+const kwInput=document.getElementById("kwInput");
+const detailEl=document.getElementById("detail");
+const chartEl=document.getElementById("chart");
+const statsEl=document.getElementById("stats");
+const groupOrderMap=Object.fromEntries(GROUP_ORDER.map((name,index)=>[name,index]));
+const typeOrderMap=Object.fromEntries(TYPE_ORDER.map((name,index)=>[name,index]));
+const groups=[...new Set(DATA.map(d=>d.g))].sort((a,b)=>(groupOrderMap[a] ?? 999)-(groupOrderMap[b] ?? 999) || a.localeCompare(b,"zh-CN"));
+const types=[...new Set(DATA.map(d=>d.type))].sort((a,b)=>(typeOrderMap[a] ?? 999)-(typeOrderMap[b] ?? 999) || a.localeCompare(b,"zh-CN"));
+
+groups.forEach(v=>appendOption(groupSel,v));
+types.forEach(v=>appendOption(typeSel,v));
+
+function appendOption(select, value){
+  const option=document.createElement("option");
+  option.value=value;
+  option.textContent=value;
+  select.appendChild(option);
+}
+
+function countBy(list, key){
+  const map={};
+  list.forEach(item=>{
+    const value=item[key];
+    map[value]=(map[value]||0)+1;
+  });
+  return map;
+}
+
+function topLabels(list, key, limit){
+  return Object.entries(countBy(list,key))
+    .sort((a,b)=>b[1]-a[1] || a[0].localeCompare(b[0],"zh-CN"))
+    .slice(0,limit)
+    .map(([name,count])=>`${name} ${count}户`)
+    .join("，");
+}
+
+function getFilteredData(){
+  const kw=state.keyword.trim().toLowerCase();
+  return DATA.filter(item=>{
+    if(state.mode==="group" && item.g!==state.value) return false;
+    if(state.mode==="type" && item.type!==state.value) return false;
+    if(kw && !item.n.toLowerCase().includes(kw)) return false;
+    return true;
+  });
+}
+
+function setMode(mode, value){
+  state.mode=mode;
+  state.value=value||"";
+  syncControls();
+  render();
+}
+
+function syncControls(){
+  const allActive=state.mode==="all";
+  document.getElementById("btnAll").style.background=allActive?"var(--color-text-primary)":"transparent";
+  document.getElementById("btnAll").style.color=allActive?"var(--color-background-primary)":"var(--color-text-primary)";
+  groupSel.value=state.mode==="group"?state.value:"";
+  typeSel.value=state.mode==="type"?state.value:"";
+  kwInput.value=state.keyword;
+}
+
+function buildSankeyData(list){
+  const nodes=[];
+  const nodeMap=new Map();
+  const linksMap=new Map();
+
+  function addNode(id, name, kind, color){
+    if(!nodeMap.has(id)){
+      const node={id,name,kind,color};
+      nodeMap.set(id,node);
+      nodes.push(node);
+    }
+  }
+
+  list.forEach(item=>{
+    const gid=`g:${item.g}`;
+    const tid=`t:${item.type}`;
+    addNode(gid,item.g,"group",GROUP_COLORS[item.g]||"#6E7683");
+    addNode(tid,item.type,"type",TYPE_COLORS[item.type]||"#8D8A86");
+
+    const key=`${gid}->${tid}`;
+    if(!linksMap.has(key)){
+      linksMap.set(key,{source:gid,target:tid,value:0,items:[],color:TYPE_COLORS[item.type]||"#8D8A86"});
+    }
+    const link=linksMap.get(key);
+    link.value+=1;
+    link.items.push(item);
+  });
+
+  return {nodes,links:[...linksMap.values()]};
+}
+
+function renderLegend(){
+  document.getElementById("legend").innerHTML=types.map(type=>`
+    <span style="display:inline-flex;align-items:center;gap:6px;">
+      <span style="width:10px;height:10px;border-radius:3px;background:${TYPE_COLORS[type]||"#8D8A86"};"></span>${type}
+    </span>
+  `).join("");
+}
+
+function renderEmpty(){
+  chartEl.innerHTML="<div style='padding:48px 16px;text-align:center;color:var(--color-text-tertiary);font-size:14px;'>没有匹配到企业，请调整筛选条件。</div>";
+  detailEl.innerHTML="<span style='color:var(--color-text-tertiary);'>当前筛选条件下没有可展示明细。</span>";
+}
+
+function renderDefaultDetail(list){
+  const topGroup=topLabels(list,"g",3) || "无";
+  const topType=topLabels(list,"type",4) || "无";
+  detailEl.innerHTML=`
+    <div style="font-size:15px;font-weight:600;color:var(--color-text-primary);margin-bottom:8px;">当前视图说明</div>
+    <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.8;">
+      当前展示 <strong>${list.length}</strong> 户企业，从左到右依次为 <strong>集团</strong>、<strong>主责主业并类</strong>。<br>
+      当前集团分布：${topGroup}。<br>
+      当前业务类型分布：${topType}。<br>
+      可点击节点快速筛选，悬停流线查看企业清单。
+    </div>
+  `;
+}
+
+function renderDetail(title, items, accent){
+  const sorted=items.slice().sort((a,b)=>a.n.localeCompare(b.n,"zh-CN"));
+  detailEl.innerHTML=`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="width:10px;height:10px;border-radius:3px;background:${accent};"></span>
+      <div style="font-size:15px;font-weight:600;color:var(--color-text-primary);">${title}（${items.length}户）</div>
+    </div>
+    <div style="display:grid;gap:6px;">
+      ${sorted.map(item=>{
+        const meta=[
+          item.type?`并类：${item.type}`:"",
+          item.c?`细分：${item.c}`:"",
+          item.core?`核定主责主业：${item.core}`:"",
+          item.equity?`股权层级：${item.equity}`:"",
+          item.manage?`管理层级：${item.manage}`:"",
+          item.rating?`评级：${item.rating}`:""
+        ].filter(Boolean).join("｜");
+        return `
+          <div style="padding:8px 10px;border-radius:10px;background:var(--color-background-primary);border:1px solid var(--color-border-tertiary);">
+            <div style="font-size:13px;color:var(--color-text-primary);font-weight:500;">${item.n}</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;line-height:1.7;">${meta}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function render(){
+  const filtered=getFilteredData();
+  statsEl.innerHTML=`显示 <strong>${filtered.length}</strong> / ${DATA.length} 户企业<br>业务类型 <strong>${new Set(filtered.map(d=>d.type)).size}</strong> 类`;
+
+  if(!filtered.length){
+    renderEmpty();
+    return;
+  }
+
+  renderDefaultDetail(filtered);
+  const graph=buildSankeyData(filtered);
+  const width=980;
+  const height=Math.max(420, Math.min(760, graph.nodes.length*20));
+  chartEl.innerHTML="";
+
+  const svg=d3.select(chartEl)
+    .append("svg")
+    .attr("viewBox",`0 0 ${width} ${height}`)
+    .attr("width","100%")
+    .style("font-family","var(--font-sans)")
+    .style("display","block");
+
+  const sankey=d3.sankey()
+    .nodeId(d=>d.id)
+    .nodeWidth(14)
+    .nodePadding(12)
+    .nodeSort((a,b)=>{
+      if(a.kind!==b.kind) return a.kind.localeCompare(b.kind);
+      if(a.kind==="group") return (groupOrderMap[a.name] ?? 999)-(groupOrderMap[b.name] ?? 999);
+      if(a.kind==="type") return (typeOrderMap[a.name] ?? 999)-(typeOrderMap[b.name] ?? 999);
+      return a.name.localeCompare(b.name,"zh-CN");
+    })
+    .extent([[160,16],[width-160,height-16]]);
+
+  const {nodes,links}=sankey({
+    nodes:graph.nodes.map(d=>({...d})),
+    links:graph.links.map(d=>({...d}))
+  });
+
+  svg.append("g")
+    .selectAll("path")
+    .data(links)
+    .join("path")
+    .attr("d",d3.sankeyLinkHorizontal())
+    .attr("fill","none")
+    .attr("stroke",d=>d.color)
+    .attr("stroke-width",d=>Math.max(1.5,d.width))
+    .attr("stroke-opacity",0.34)
+    .style("cursor","pointer")
+    .on("mouseover",function(_,d){
+      d3.select(this).attr("stroke-opacity",0.8);
+      const source=d.source.name||d.source.id;
+      const target=d.target.name||d.target.id;
+      renderDetail(`${source} → ${target}`, d.items, d.color);
+    })
+    .on("mouseout",function(){
+      d3.select(this).attr("stroke-opacity",0.34);
+    });
+
+  svg.append("g")
+    .selectAll("rect")
+    .data(nodes)
+    .join("rect")
+    .attr("x",d=>d.x0)
+    .attr("y",d=>d.y0)
+    .attr("width",d=>Math.max(1,d.x1-d.x0))
+    .attr("height",d=>Math.max(1,d.y1-d.y0))
+    .attr("rx",3)
+    .attr("fill",d=>d.color)
+    .style("cursor","pointer")
+    .on("click",(_,d)=>{
+      if(d.kind==="group") setMode("group",d.name);
+      else setMode("type",d.name);
+    })
+    .on("mouseover",(_,d)=>{
+      const items=filtered.filter(item=>
+        (d.kind==="group" && item.g===d.name) ||
+        (d.kind==="type" && item.type===d.name)
+      );
+      renderDetail(`${d.name}`, items, d.color);
+    });
+
+  svg.append("g")
+    .selectAll("text")
+    .data(nodes)
+    .join("text")
+    .attr("x",d=>d.kind==="group"?d.x0-8:d.x1+8)
+    .attr("y",d=>(d.y0+d.y1)/2)
+    .attr("dy","0.35em")
+    .attr("text-anchor",d=>d.kind==="group"?"end":"start")
+    .attr("font-size","11px")
+    .attr("fill","var(--color-text-primary)")
+    .style("pointer-events","none")
+    .text(d=>`${d.name}（${d.value}）`);
+}
+
+document.getElementById("btnAll").onclick=()=>setMode("all");
+groupSel.onchange=()=>setMode(groupSel.value?"group":"all",groupSel.value);
+typeSel.onchange=()=>setMode(typeSel.value?"type":"all",typeSel.value);
+kwInput.oninput=()=>{
+  state.keyword=kwInput.value;
+  render();
+};
+
+renderLegend();
+syncControls();
+render();
+</script>
